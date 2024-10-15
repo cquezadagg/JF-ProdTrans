@@ -13,34 +13,28 @@ import {
 import { useMemo } from "react";
 
 export function ClientDashboard() {
-  const { manifestsData } = useAppContext();
+  const { manifestsData, driversData } = useAppContext();
+
   const allFacturas = useMemo(() => {
     return manifestsData.flatMap((manifest) => {
       const parsedDate =
         typeof manifest.fechaCreacion === "object" &&
         "toDate" in manifest.fechaCreacion
-          ? manifest.fechaCreacion
-          : new Date(manifest.fechaCreacion);
+          ? manifest.fechaCreacion // Si es un Timestamp de Firestore
+          : new Date(manifest.fechaCreacion); // Si es un string de fecha
       const formattedDate = format(parsedDate, "dd/MM/yyyy");
+
+      // Busca el conductor en driversData comparando por el idDriver
+      const driver = driversData.find((d) => d.uid === manifest.idDriver);
 
       return manifest.facturas.map((factura) => ({
         ...factura,
         fecha: formattedDate,
-        conductor: manifest.idDriver,
+        conductor: driver ? driver.nombre : "Conductor desconocido", // Aquí colocamos el nombre del conductor
       }));
     });
-  }, [manifestsData]);
+  }, [manifestsData, driversData]);
 
-  const getStateColor = (estado: string) => {
-    switch (estado) {
-      case "Entregado":
-        return "bg-green-200 text-green-800";
-      case "En camino":
-        return "bg-yellow-200 text-yellow-800";
-      default:
-        return "bg-zinc-200 text-zinc-800";
-    }
-  };
   return (
     <>
       <header>
@@ -101,7 +95,7 @@ export function ClientDashboard() {
                       {facturas.cantBultos}
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap">
-                      {facturas.idDriver}
+                      {facturas.conductor}
                     </TableCell>
                   </TableRow>
                 ))}

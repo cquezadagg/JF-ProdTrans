@@ -62,7 +62,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       );
 
       // Encuentra el manifiesto en Firestore utilizando 'numManifiesto'
-      const driver = driversData.find((driver) =>
+      const driver = driversData.find(() =>
         manifestsData.some(
           (manifest) => manifest.numManifiesto === manifestNum,
         ),

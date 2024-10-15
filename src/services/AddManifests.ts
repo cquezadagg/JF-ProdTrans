@@ -5,28 +5,28 @@ import {
   query,
   where,
   Timestamp,
-} from 'firebase/firestore';
-import { Drivers, Manifest } from '@/types/types';
-import { auth, firestore } from '@/firebase/client';
+} from "firebase/firestore";
+import { Drivers, Manifest } from "@/types/types"; // Asegúrate de que estos tipos estén bien definidos
+import { auth, firestore } from "@/firebase/client";
 
 export async function addManifestData(
-  manifest: Manifest['facturas'],
-  selectedDriver: Drivers
+  manifest: Manifest["facturas"], // Ajusta el tipo correctamente aquí
+  selectedDriver: Drivers,
 ): Promise<{ success: boolean; message: string }> {
   try {
     const user = auth.currentUser;
-    if (!user) throw new Error('Usuario no autenticado');
+    if (!user) throw new Error("Usuario no autenticado");
 
     if (!selectedDriver || !selectedDriver.uid) {
-      throw new Error('Conductor seleccionado no válido o sin UID');
+      throw new Error("Conductor seleccionado no válido o sin UID");
     }
 
     // Colección de manifiestos para el conductor seleccionado
     const manifestCollection = collection(
       firestore,
-      'users',
+      "users",
       selectedDriver.uid,
-      'manifests'
+      "manifests",
     );
 
     // Función para generar un número aleatorio entre 100 y 999
@@ -34,8 +34,8 @@ export async function addManifestData(
       return Math.floor(Math.random() * 900) + 100; // Genera un número entre 100 y 999
     };
 
-    const numFacturasNuevas = manifest.map((factura) => factura.numFactura);
-    let nextNumManifiesto = '';
+    const numFacturasNuevas = manifest.map((factura) => factura.numFactura); // Verifica que el tipo de factura esté bien definido
+    let nextNumManifiesto = "";
     let isUniqueManifest = false;
 
     // Bucle para garantizar que el número de manifiesto generado sea único
@@ -46,7 +46,7 @@ export async function addManifestData(
       // Verifica si el manifiesto con este número ya existe
       const q = query(
         manifestCollection,
-        where('numManifiesto', '==', nextNumManifiesto)
+        where("numManifiesto", "==", nextNumManifiesto),
       );
       const snapShot = await getDocs(q);
 
@@ -61,14 +61,16 @@ export async function addManifestData(
       // Si hay facturas ya existentes, obtenemos los números de factura duplicados
       const facturasDuplicadas = snapShotFact.docs
         .flatMap((doc) =>
-          doc.data().facturas.map((factura) => factura.numFactura)
+          (doc.data().facturas as Manifest["facturas"]).map(
+            (factura) => factura.numFactura,
+          ),
         )
         .filter((numFactura) => numFacturasNuevas.includes(numFactura));
 
       if (facturasDuplicadas.length > 0) {
         return {
           success: false,
-          message: `Las siguientes facturas ya existen en la base de datos: ${facturasDuplicadas.join(', ')}`,
+          message: `Las siguientes facturas ya existen en la base de datos: ${facturasDuplicadas.join(", ")}`,
         };
       }
     }
@@ -91,9 +93,12 @@ export async function addManifestData(
       message: `Manifiesto agregado exitosamente con número: ${nextNumManifiesto}`,
     };
   } catch (error) {
+    // Asegúrate de manejar el error como Error correctamente
+    const errorMessage =
+      error instanceof Error ? error.message : "Error desconocido";
     return {
       success: false,
-      message: `Error: ${error.message}`,
+      message: `Error: ${errorMessage}`,
     };
   }
 }

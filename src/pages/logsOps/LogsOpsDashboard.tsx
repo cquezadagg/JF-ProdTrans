@@ -20,11 +20,11 @@ import { LineMdLoadingTwotoneLoop } from "@/components/ui/Loading";
 
 type FacturasStatus = "Asignado" | "En camino" | "Entregado";
 
-const facturaStatuses: FacturasStatus[] = [
-  "Asignado",
-  "En camino",
-  "Entregado",
-];
+// const facturaStatuses: FacturasStatus[] = [
+//   "Asignado",
+//   "En camino",
+//   "Entregado",
+// ];
 
 export function LogsOpsDashboard() {
   const { manifestsData, driversData } = useAppContext();

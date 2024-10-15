@@ -6,7 +6,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
-import { Delete } from "lucide-react";
 import { useState } from "react";
 import { FieldValues } from "react-hook-form";
 import { EditCurrentFactura } from "./EditCurrentFactura";
@@ -31,13 +30,6 @@ export function TableFacturas({
     if (facturaToEdit) {
       setShowEdit(facturaToEdit);
     }
-  };
-
-  const handleDelete = (numeroFactura: string) => {
-    const updatedFacturas = facturasNuevas.filter(
-      (factura) => factura.numero_factura !== numeroFactura,
-    );
-    setFacturasNuevas(updatedFacturas);
   };
 
   const handleVolver = () => {

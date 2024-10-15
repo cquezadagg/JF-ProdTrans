@@ -54,7 +54,7 @@ export function Home() {
     } catch (err) {
       setLoading(false);
       setIsGood(false);
-      setError(err.message || "Ocurrió un error");
+      setError(err instanceof Error ? err.message : "Ocurrió un error");
     }
   };
 
