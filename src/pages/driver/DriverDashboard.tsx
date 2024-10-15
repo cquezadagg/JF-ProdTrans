@@ -71,7 +71,7 @@ export function DriverDashboard() {
                 typeof manifest.fechaCreacion === "object" &&
                 "toDate" in manifest.fechaCreacion
               ) {
-                parsedDate = manifest.fechaCreacion;
+                parsedDate = manifest.fechaCreacion.toDate();
               } else {
                 parsedDate = new Date(manifest.fechaCreacion);
               }
