@@ -1,7 +1,7 @@
 export interface Manifest {
   idDriver: string;
   numManifiesto: string;
-  fechaCreacion: string;
+  fechaCreacion: firebase.firestore.Timestamp | string | null;
   fechaModificacion?: string;
   fechaEntrega?: string;
   facturas: Facturas[];

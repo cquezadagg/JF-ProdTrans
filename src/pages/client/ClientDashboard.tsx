@@ -1,6 +1,6 @@
 import { ClientNav } from "@/components/ui/navs/ClientNav";
 import { useAppContext } from "@/hooks/useAppContext";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns"; // Importa isValid
 import {
   Table,
   TableBody,
@@ -17,20 +17,33 @@ export function ClientDashboard() {
 
   const allFacturas = useMemo(() => {
     return manifestsData.flatMap((manifest) => {
-      const parsedDate =
+      let parsedDate;
+      if (
         typeof manifest.fechaCreacion === "object" &&
         "toDate" in manifest.fechaCreacion
-          ? manifest.fechaCreacion // Si es un Timestamp de Firestore
-          : new Date(manifest.fechaCreacion); // Si es un string de fecha
-      const formattedDate = format(parsedDate, "dd/MM/yyyy");
+      ) {
+        parsedDate = manifest.fechaCreacion.toDate(); // Si es un Timestamp de Firestore
+      } else if (manifest.fechaCreacion) {
+        parsedDate = new Date(manifest.fechaCreacion); // Si es un string de fecha
+      } else {
+        parsedDate = new Date(); // Valor por defecto si no hay fecha
+      }
 
-      // Busca el conductor en driversData comparando por el idDriver
+      let formattedDate = "Fecha no disponible";
+      if (isValid(parsedDate)) {
+        try {
+          formattedDate = format(parsedDate, "dd/MM/yyyy");
+        } catch (error) {
+          console.error("Error al formatear la fecha:", error);
+        }
+      }
+
       const driver = driversData.find((d) => d.uid === manifest.idDriver);
 
       return manifest.facturas.map((factura) => ({
         ...factura,
         fecha: formattedDate,
-        conductor: driver ? driver.nombre : "Conductor desconocido", // Aquí colocamos el nombre del conductor
+        conductor: driver ? driver.nombre : "Conductor desconocido",
       }));
     });
   }, [manifestsData, driversData]);
