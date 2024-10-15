@@ -34,7 +34,7 @@ export function LogsOpsDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true); // Mostrar loading al comenzar
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // Simula un tiempo de carga
+      await new Promise((resolve) => setTimeout(resolve, 5000)); // Simula un tiempo de carga
       setIsLoading(false); // Ocultar loading cuando se termine la carga
     };
 
@@ -63,7 +63,6 @@ export function LogsOpsDashboard() {
           Dashboard Logístico
         </h1>
         <section className="mt-10 grid rounded-lg p-4 bg-white ">
-          <p className="text-black font-semibold">Todas las facturas</p>
           <Card>
             <CardHeader>
               <CardTitle className="text-center">Facturas</CardTitle>
