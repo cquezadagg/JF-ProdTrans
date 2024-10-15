@@ -71,7 +71,7 @@ export function LogsOpsDashboard() {
                 Listado completo de facturas
               </CardDescription>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
+            <CardContent className="overflow-x-auto border-2">
               {/* Vista para móviles */}
               <div className="block sm:hidden">
                 {manifestsData.flatMap((manifest) =>
@@ -81,22 +81,29 @@ export function LogsOpsDashboard() {
                       className="mb-4 p-4 border-2 rounded-lg "
                     >
                       <div className="mb-2 grid border-b-2">
-                        <strong>Num. de manifiesto</strong>{" "}
-                        {manifest.numManifiesto}
-                      </div>
-                      <div className="mb-2 grid border-b-2">
                         <strong>Num. de factura</strong> {factura.numFactura}
                       </div>
                       <div className="mb-2 grid border-b-2">
                         <strong>Destino</strong> {factura.destino}
                       </div>
-                      <div className="grid">
+                      <div className="mb-2 grid border-b-2">
                         <strong>Conductor</strong>{" "}
                         {
                           driversData.find(
                             (driver) => driver.uid === manifest.idDriver,
                           )?.nombre
                         }
+                      </div>
+                      <div className="grid">
+                        <strong>Estado</strong>{" "}
+                        <span
+                          className={`p-2 rounded ${
+                            statusColor[factura.estado as FacturasStatus] ||
+                            "bg-gray-200 text-gray-800"
+                          }`}
+                        >
+                          {factura.estado}
+                        </span>
                       </div>
                     </div>
                   )),
