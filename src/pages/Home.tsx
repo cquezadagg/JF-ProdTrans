@@ -6,7 +6,7 @@ import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { LineMdLoadingTwotoneLoop } from "@/components/ui/Loading";
-import PartnerImage from "@/assets/Partner.png";
+import PartnerImage from "../../public/Partner.png";
 import Tecno from "../../public/tecno.png";
 
 export function Home() {
