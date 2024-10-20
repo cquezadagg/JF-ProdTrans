@@ -16,6 +16,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/Card";
+import FilterManifest from "@/components/ui/filters/FilterManifest";
 type FacturasStatus = "Asignado" | "En camino" | "Entregado";
 
 export function ClientDashboard() {
@@ -43,15 +44,18 @@ export function ClientDashboard() {
                 Listado completo de facturas
               </CardDescription>
             </CardHeader>
+            <FilterManifest />
             <CardContent className="overflow-x-auto border-2">
-              {/* Vista para móviles */}
               {manifestsData.flatMap((manifest) =>
                 manifest.facturas.map((factura) => (
-                  <Card key={factura.numFactura}>
+                  <Card
+                    key={factura.numFactura}
+                    className=" mb-3 border-2 border-zinc-800"
+                  >
                     <CardTitle className="p-5 text-center text-xl">
                       {manifest.numManifiesto}
                     </CardTitle>
-                    <div className="font-bold text-sm grid grid-cols-2 gap-2 justify-items-stretch">
+                    <div className="font-bold text-sm grid grid-cols-2 gap-2 justify-items-stretch pl-6">
                       <span className="font-extralight text-sm mt-2 text-zinc-700 gap-2 flex flex-col">
                         <span className="font-bold">Fecha de asignación</span>
                         {format(
@@ -70,7 +74,7 @@ export function ClientDashboard() {
                     </div>
                     <CardContent>
                       <div className="font-extralight text-sm mt-2 text-zinc-700">
-                        <Table className="w-auto h-auto">
+                        <Table>
                           <TableHeader>
                             <TableRow>
                               <TableHead>Factura</TableHead>
