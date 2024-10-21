@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useAppContext } from "@/hooks/useAppContext";
+import { Label } from "@radix-ui/react-select";
 import { FieldValues, useForm } from "react-hook-form";
 
 interface EditCurrentFacturaProps {
@@ -33,9 +34,8 @@ export function EditCurrentFactura({
               Datos de la factura
             </h1>
             <section>
+              <Label>Numero factura</Label>
               <Input
-                label="Número factura"
-                labelProps={{ className: "text-white font-extralight" }}
                 {...register("numero_factura", {
                   onChange: (e) => {
                     const value = e.target.value.replace(/\D/g, "");
@@ -64,11 +64,8 @@ export function EditCurrentFactura({
               </select>
             </section>
             <section>
-              <Input
-                label="Bultos"
-                labelProps={{ className: "text-white font-extralight mt-4" }}
-                {...register("bultos")}
-              />
+              <Label>Bultos</Label>
+              <Input {...register("bultos")} />
             </section>
             <div className="grid grid-cols-2 gap-4 mt-4">
               <Button

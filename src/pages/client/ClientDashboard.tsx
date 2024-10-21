@@ -1,6 +1,7 @@
 import { ClientNav } from "@/components/ui/navs/ClientNav";
 import { useAppContext } from "@/hooks/useAppContext";
-import { format } from "date-fns"; // Importa isValid
+import { format } from "date-fns";
+import { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -17,16 +18,74 @@ import {
   CardContent,
 } from "@/components/ui/Card";
 import FilterManifest from "@/components/ui/filters/FilterManifest";
+
 type FacturasStatus = "Asignado" | "En camino" | "Entregado";
+
+interface Filters {
+  status: string | null;
+  date: string | null;
+  search: string | null;
+}
 
 export function ClientDashboard() {
   const { manifestsData, driversData } = useAppContext();
+  const [filters, setFilters] = useState<Filters>({
+    status: null,
+    date: null,
+    search: null,
+  });
 
   const statusColor: Record<FacturasStatus, string> = {
     Asignado: "bg-blue-200 text-blue-800",
     "En camino": "bg-yellow-200 text-yellow-800",
     Entregado: "bg-green-200 text-green-800",
   };
+
+  const filteredManifests = useMemo(() => {
+    return manifestsData.filter((manifest) => {
+      // Filtrar por fecha
+      if (filters.date) {
+        const manifestDate = format(
+          new Date(manifest.fechaCreacion.toDate()),
+          "yyyy-MM-dd",
+        );
+        if (manifestDate !== filters.date) {
+          return false;
+        }
+      }
+
+      // Filtrar por número de manifiesto o factura
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const hasMatchingManifest = manifest.numManifiesto
+          .toLowerCase()
+          .includes(searchLower);
+        const hasMatchingFactura = manifest.facturas.some((factura) =>
+          factura.numFactura.toString().includes(searchLower),
+        );
+        if (!hasMatchingManifest && !hasMatchingFactura) {
+          return false;
+        }
+      }
+
+      // Filtrar por estado
+      if (filters.status) {
+        const hasMatchingStatus = manifest.facturas.some(
+          (factura) => factura.estado === filters.status,
+        );
+        if (!hasMatchingStatus) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [manifestsData, filters]);
+
+  const handleFilterChange = (newFilters: Filters) => {
+    setFilters(newFilters);
+  };
+
   return (
     <>
       <header>
@@ -44,13 +103,13 @@ export function ClientDashboard() {
                 Listado completo de facturas
               </CardDescription>
             </CardHeader>
-            <FilterManifest />
+            <FilterManifest onFilterChange={handleFilterChange} />
             <CardContent className="overflow-x-auto border-2">
-              {manifestsData.flatMap((manifest) =>
+              {filteredManifests.flatMap((manifest) =>
                 manifest.facturas.map((factura) => (
                   <Card
                     key={factura.numFactura}
-                    className=" mb-3 border-2 border-zinc-800"
+                    className="mb-3 border-2 border-zinc-800"
                   >
                     <CardTitle className="p-5 text-center text-xl">
                       {manifest.numManifiesto}

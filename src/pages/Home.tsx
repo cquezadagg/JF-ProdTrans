@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { LineMdLoadingTwotoneLoop } from "@/components/ui/Loading";
 import PartnerImage from "../../public/Partner.png";
 import Tecno from "../../public/tecno.png";
+import { Label } from "@/components/ui/label";
 
 export function Home() {
   const [loading, setLoading] = useState(false);
@@ -75,8 +76,8 @@ export function Home() {
             <FormProvider {...methods}>
               <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
                 <div>
+                  <Label>Ingrese su correo</Label>
                   <Input
-                    label="Ingrese su correo"
                     placeholder="tu@empresa.cl"
                     type="email"
                     {...register("email", {
@@ -95,8 +96,8 @@ export function Home() {
                 </div>
 
                 <div>
+                  <Label>Ingrese su contraseña</Label>
                   <Input
-                    label="Ingrese su contraseña"
                     type="password"
                     placeholder="••••••••"
                     {...register("password", {

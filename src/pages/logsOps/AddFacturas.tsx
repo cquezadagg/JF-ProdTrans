@@ -10,6 +10,7 @@ import { LineMdLoadingTwotoneLoop } from "@/components/ui/Loading";
 import { addManifestData } from "@/services/AddManifests";
 import { PopupState } from "@/components/ui/ErrorMessage";
 import { useNavigate } from "react-router-dom";
+import { Label } from "@radix-ui/react-select";
 
 interface AddFacturasProps {
   selectedDriver: Drivers | null;
@@ -144,11 +145,10 @@ export function AddFacturas({ selectedDriver }: AddFacturasProps) {
                   txtColor="text-red-500"
                 />
               )}
+              <Label>Numero factura</Label>
               <Input
-                label="Número factura"
                 type="text"
                 placeholder="1234-5"
-                labelProps={{ className: "text-white font-extralight" }}
                 className="mb-4 rounded-lg p-1 text-center"
                 {...register("numero_factura", {
                   required: {
@@ -206,12 +206,9 @@ export function AddFacturas({ selectedDriver }: AddFacturasProps) {
                   txtColor="text-red-500"
                 />
               )}
+              <Label>Destino</Label>
               <Input
-                label="Destino"
                 type="text"
-                labelProps={{
-                  className: "mt-4 text-white font-extralight",
-                }}
                 readOnly
                 value={selectedClient?.destino || ""}
                 className="rounded-lg text-center p-1"
@@ -225,12 +222,9 @@ export function AddFacturas({ selectedDriver }: AddFacturasProps) {
                   txtColor="text-red-500"
                 />
               )}
+              <Label>Bultos</Label>
               <Input
-                label="Bultos"
                 type="number"
-                labelProps={{
-                  className: "mt-4 text-white font-extralight",
-                }}
                 placeholder="10"
                 className="mb-4 rounded-lg p-1 text-center"
                 {...register("bultos", {

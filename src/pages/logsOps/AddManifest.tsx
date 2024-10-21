@@ -7,6 +7,7 @@ import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { AddFacturas } from "./AddFacturas";
 import { Alert } from "@/components/ui/Alert";
+import { Label } from "@radix-ui/react-select";
 
 export function AddManifest() {
   const [selectedDriver, setSelectedDriver] = useState<Drivers | null>(null);
@@ -90,9 +91,8 @@ export function AddManifest() {
                   </select>
                 </article>
                 <article className="grid gap-2">
+                  <Label>Fecha</Label>
                   <Input
-                    label="Fecha"
-                    labelProps={{ className: "text-white font-extralight" }}
                     value={new Date().toLocaleDateString("es-ES")}
                     readOnly
                     {...register("fechaCreacion")}

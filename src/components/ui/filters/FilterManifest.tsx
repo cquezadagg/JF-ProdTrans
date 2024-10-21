@@ -13,10 +13,22 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/label";
 
-export default function EnhancedFilter({ onFilterChange }) {
-  const [status, setStatus] = useState("all");
-  const [date, setDate] = useState(null);
-  const [search, setSearch] = useState("");
+interface Filters {
+  status: string | null;
+  date: string | null;
+  search: string | null;
+}
+
+interface EnhancedFilterProps {
+  onFilterChange: (filters: Filters) => void;
+}
+
+export default function EnhancedFilter({
+  onFilterChange,
+}: EnhancedFilterProps) {
+  const [status, setStatus] = useState<string>("all");
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [search, setSearch] = useState<string>("");
 
   const handleFilterChange = () => {
     onFilterChange({
@@ -24,6 +36,10 @@ export default function EnhancedFilter({ onFilterChange }) {
       date: date ? format(date, "yyyy-MM-dd") : null,
       search: search.trim() || null,
     });
+  };
+
+  const handleDateChange = (newDate: Date | undefined) => {
+    setDate(newDate);
   };
 
   return (
@@ -46,7 +62,7 @@ export default function EnhancedFilter({ onFilterChange }) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="date">Fecha</Label>
-          <DatePicker date={date} setDate={setDate} />
+          <DatePicker date={date} setDate={handleDateChange} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="search">Buscar factura o manifiesto</Label>
