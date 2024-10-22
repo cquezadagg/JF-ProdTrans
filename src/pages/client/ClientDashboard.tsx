@@ -1,52 +1,90 @@
 import { ClientNav } from "@/components/ui/navs/ClientNav";
 import { useAppContext } from "@/hooks/useAppContext";
-import { format, isValid } from "date-fns"; // Importa isValid
+import { format } from "date-fns";
+import { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
-import { useMemo } from "react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/Card";
+import FilterManifest from "@/components/ui/filters/FilterManifest";
+
+type FacturasStatus = "Asignado" | "En camino" | "Entregado";
+
+interface Filters {
+  status: string | null;
+  date: string | null;
+  search: string | null;
+}
 
 export function ClientDashboard() {
   const { manifestsData, driversData } = useAppContext();
+  const [filters, setFilters] = useState<Filters>({
+    status: null,
+    date: null,
+    search: null,
+  });
 
-  const allFacturas = useMemo(() => {
-    return manifestsData.flatMap((manifest) => {
-      let parsedDate;
-      if (
-        typeof manifest.fechaCreacion === "object" &&
-        "toDate" in manifest.fechaCreacion
-      ) {
-        parsedDate = manifest.fechaCreacion.toDate(); // Si es un Timestamp de Firestore
-      } else if (manifest.fechaCreacion) {
-        parsedDate = new Date(manifest.fechaCreacion); // Si es un string de fecha
-      } else {
-        parsedDate = new Date(); // Valor por defecto si no hay fecha
-      }
+  const statusColor: Record<FacturasStatus, string> = {
+    Asignado: "bg-blue-200 text-blue-800",
+    "En camino": "bg-yellow-200 text-yellow-800",
+    Entregado: "bg-green-200 text-green-800",
+  };
 
-      let formattedDate = "Fecha no disponible";
-      if (isValid(parsedDate)) {
-        try {
-          formattedDate = format(parsedDate, "dd/MM/yyyy");
-        } catch (error) {
-          console.error("Error al formatear la fecha:", error);
+  const filteredManifests = useMemo(() => {
+    return manifestsData.filter((manifest) => {
+      // Filtrar por fecha
+      if (filters.date) {
+        const manifestDate = format(
+          new Date(manifest.fechaCreacion.toDate()),
+          "yyyy-MM-dd",
+        );
+        if (manifestDate !== filters.date) {
+          return false;
         }
       }
 
-      const driver = driversData.find((d) => d.uid === manifest.idDriver);
+      // Filtrar por número de manifiesto o factura
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const hasMatchingManifest = manifest.numManifiesto
+          .toLowerCase()
+          .includes(searchLower);
+        const hasMatchingFactura = manifest.facturas.some((factura) =>
+          factura.numFactura.toString().includes(searchLower),
+        );
+        if (!hasMatchingManifest && !hasMatchingFactura) {
+          return false;
+        }
+      }
 
-      return manifest.facturas.map((factura) => ({
-        ...factura,
-        fecha: formattedDate,
-        conductor: driver ? driver.nombre : "Conductor desconocido",
-      }));
+      // Filtrar por estado
+      if (filters.status) {
+        const hasMatchingStatus = manifest.facturas.some(
+          (factura) => factura.estado === filters.status,
+        );
+        if (!hasMatchingStatus) {
+          return false;
+        }
+      }
+
+      return true;
     });
-  }, [manifestsData, driversData]);
+  }, [manifestsData, filters]);
+
+  const handleFilterChange = (newFilters: Filters) => {
+    setFilters(newFilters);
+  };
 
   return (
     <>
@@ -58,63 +96,78 @@ export function ClientDashboard() {
           <h1 className="text-white fot-bold text-2xl mt-10 text-center mb-4">
             Dashboard cliente
           </h1>
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <Table>
-              <TableCaption>Listado de todas las facturas</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Factura
-                  </TableHead>
-                  <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
-                  </TableHead>
-                  <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha
-                  </TableHead>
-                  <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
-                  </TableHead>
-                  <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Destino
-                  </TableHead>
-                  <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Bultos
-                  </TableHead>
-                  <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Conductor
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="bg-white divide-y divide-gray-200">
-                {allFacturas.map((facturas) => (
-                  <TableRow key={facturas.numFactura}>
-                    <TableCell className="px-6 py-4 whitespace-nowrap">
-                      {facturas.numFactura}
-                    </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap">
-                      {facturas.estado}
-                    </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap">
-                      {facturas.fecha}
-                    </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap">
-                      {facturas.nombreCliente}
-                    </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap">
-                      {facturas.destino}
-                    </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap">
-                      {facturas.cantBultos}
-                    </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap">
-                      {facturas.conductor}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center text-2xl">Facturas</CardTitle>
+              <CardDescription className="text-center">
+                Listado completo de facturas
+              </CardDescription>
+            </CardHeader>
+            <FilterManifest onFilterChange={handleFilterChange} />
+            <CardContent className="overflow-x-auto border-2">
+              {filteredManifests.flatMap((manifest) =>
+                manifest.facturas.map((factura) => (
+                  <Card
+                    key={factura.numFactura}
+                    className="mb-3 border-2 border-zinc-800"
+                  >
+                    <CardTitle className="p-5 text-center text-xl">
+                      {manifest.numManifiesto}
+                    </CardTitle>
+                    <div className="font-bold text-sm grid grid-cols-2 gap-2 justify-items-stretch pl-6">
+                      <span className="font-extralight text-sm mt-2 text-zinc-700 gap-2 flex flex-col">
+                        <span className="font-bold">Fecha de asignación</span>
+                        {format(
+                          new Date(manifest.fechaCreacion.toDate()),
+                          "dd/MM/yyyy",
+                        )}
+                      </span>
+                      <span className="font-extralight text-sm mt-2 text-zinc-700 gap-2 flex flex-col">
+                        <span className="font-bold">Conductor</span>
+                        {
+                          driversData.find(
+                            (driver) => driver.uid === manifest.idDriver,
+                          )?.nombre
+                        }
+                      </span>
+                    </div>
+                    <CardContent>
+                      <div className="font-extralight text-sm mt-2 text-zinc-700">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Factura</TableHead>
+                              <TableHead>Destino</TableHead>
+                              <TableHead>Bultos</TableHead>
+                              <TableHead>Estado</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell>{factura.numFactura}</TableCell>
+                              <TableCell>{factura.destino}</TableCell>
+                              <TableCell>{factura.cantBultos}</TableCell>
+                              <TableCell>
+                                <span
+                                  className={`p-2 rounded ${
+                                    statusColor[
+                                      factura.estado as FacturasStatus
+                                    ] || "bg-gray-200 text-gray-800"
+                                  }`}
+                                >
+                                  {factura.estado}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )),
+              )}
+            </CardContent>
+          </Card>
         </section>
       </main>
     </>
