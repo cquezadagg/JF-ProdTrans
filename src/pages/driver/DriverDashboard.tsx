@@ -19,9 +19,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { LineMdLoadingTwotoneLoop } from "@/components/ui/Loading";
+import { useState, useEffect } from "react";
 
 export function DriverDashboard() {
   const { manifestsData, updateFacturaState } = useAppContext();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, []);
 
   const getAvailableStates = (currentEstado: string) => {
     const allStates = ["Asignado", "En camino", "Entregado"];
@@ -52,6 +65,12 @@ export function DriverDashboard() {
   ) => {
     updateFacturaState(manifestNum, facturaNum, newState);
   };
+
+  if (isLoading) {
+    return (
+      <LineMdLoadingTwotoneLoop msg="Cargando datos, por favor espera..." />
+    );
+  }
 
   return (
     <>

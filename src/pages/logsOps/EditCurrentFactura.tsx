@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useAppContext } from "@/hooks/useAppContext";
-import { Label } from "@radix-ui/react-select";
+import { Label } from "@/components/ui/label";
 import { FieldValues, useForm } from "react-hook-form";
 
 interface EditCurrentFacturaProps {

@@ -9,18 +9,17 @@ import { Alert } from "@/components/ui/Alert";
 import { LineMdLoadingTwotoneLoop } from "@/components/ui/Loading";
 import { addManifestData } from "@/services/AddManifests";
 import { PopupState } from "@/components/ui/ErrorMessage";
-import { useNavigate } from "react-router-dom";
-import { Label } from "@radix-ui/react-select";
+import { Label } from "@/components/ui/label";
 
 interface AddFacturasProps {
   selectedDriver: Drivers | null;
+  onReset: () => void;
 }
 
-export function AddFacturas({ selectedDriver }: AddFacturasProps) {
+export function AddFacturas({ selectedDriver, onReset }: AddFacturasProps) {
   const { clientData } = useAppContext();
   const [facturasData, setFacturasData] = useState<FieldValues[]>([]);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const [error, setError] = useState("");
   const [destino, setDestino] = useState("");
   const [isGood, setIsGood] = useState(false);
@@ -43,7 +42,7 @@ export function AddFacturas({ selectedDriver }: AddFacturasProps) {
       (client) => client.nombre === selectedClientName,
     );
     if (selectedClient) {
-      setDestino(selectedClient.destino || ""); // Actualizamos el estado de destino
+      setDestino(selectedClient.destino || "");
     }
   }, [selectedClientName, clientData]);
 
@@ -55,21 +54,22 @@ export function AddFacturas({ selectedDriver }: AddFacturasProps) {
     ]);
     if (isValid) {
       const data = getValues();
+      if (data.numero_factura) {
+      }
       const facturaData = { ...data, destino };
       setFacturasData([...facturasData, facturaData]);
       reset();
     }
   };
 
-  // Buscar el cliente seleccionado en los datos de cliente para obtener su destino
   const selectedClient = clientData.find(
     (client) => client.nombre === selectedClientName,
   );
+
   useEffect(() => {
     if (error) {
-      // Muestra el mensaje de error y luego lo resetea
       setTimeout(() => {
-        setError(""); // Resetea el error después de un pequeño retraso
+        setError("");
       }, 3000);
     }
   }, [error]);
@@ -87,24 +87,39 @@ export function AddFacturas({ selectedDriver }: AddFacturasProps) {
             estado: "Asignado",
           }),
         );
-        const responsePrueba = await addManifestData(
-          manifestData,
-          selectedDriver,
-        );
-        if (responsePrueba.success) {
+
+        try {
+          const responsePrueba = await addManifestData(
+            manifestData,
+            selectedDriver,
+          );
+
           setLoading(false);
-          setIsGood(true);
-          setError(responsePrueba.message.toString()); // Aquí se establece el mensaje de éxito
-          navigate("/agregar-manifiesto");
-        } else {
+
+          if (responsePrueba.success) {
+            setIsGood(true);
+            setError(responsePrueba.message.toString());
+
+            // Esperar 3 segundos antes de ejecutar el reset
+            setTimeout(() => {
+              setError("");
+              onReset();
+              setFacturasData([]);
+              setIsGood(false);
+            }, 3000);
+          } else {
+            setIsGood(false);
+            setError(responsePrueba.message.toString());
+          }
+        } catch (err) {
           setLoading(false);
           setIsGood(false);
-          setError(responsePrueba.message.toString()); // Aquí se establece el mensaje de error
+          setError("Error al procesar las facturas");
         }
       }
     } else {
       setLoading(false);
-      console.log("No hay facturas para enviar.");
+      setIsGood(false);
       setError("No hay facturas para enviar.");
     }
   };
@@ -145,37 +160,25 @@ export function AddFacturas({ selectedDriver }: AddFacturasProps) {
                   txtColor="text-red-500"
                 />
               )}
-              <Label>Numero factura</Label>
+              <Label className="font-extralight text-white">
+                Numero factura
+              </Label>
               <Input
                 type="text"
                 placeholder="1234-5"
-                className="mb-4 rounded-lg p-1 text-center"
+                className="mb-4 rounded-lg p-1 text-center bg-white text-black"
                 {...register("numero_factura", {
                   required: {
                     value: true,
                     message: "Número de factura requerido",
                   },
-                  pattern: {
-                    value: /^[1-9]\d*(-\d+)?$/,
-                    message:
-                      "Formato de factura inválido. Use números positivos con un guion opcional (ej: 1234 o 1234-5)",
-                  },
                   validate: (value) => {
-                    if (value.startsWith("0")) {
-                      return "El número de factura no puede empezar con 0";
-                    }
-                    if (value.endsWith("-")) {
-                      return "El número de factura no puede terminar con un guion";
-                    }
-                    return true;
+                    const exists = facturasData.some(
+                      (factura) => factura.numero_factura === value,
+                    );
+                    return !exists || "Este número de factura ya existe";
                   },
                 })}
-                onKeyPress={(e) => {
-                  const keyCode = e.which ? e.which : e.keyCode;
-                  if (keyCode !== 45 && (keyCode < 48 || keyCode > 57)) {
-                    e.preventDefault();
-                  }
-                }}
               />
               {errors.nombre_cliente && (
                 <Alert
@@ -183,9 +186,9 @@ export function AddFacturas({ selectedDriver }: AddFacturasProps) {
                   txtColor="text-red-500"
                 />
               )}
-              <p className="font-extralight text-white">Cliente</p>
+              <Label className="font-extralight text-white">Cliente</Label>
               <select
-                className="w-full mt-2 rounded-lg border border-zinc-300 p-2 font-extralight bg-gray-800 text-white"
+                className="w-full mt-2 rounded-lg border border-zinc-300 p-2 font-extralight bg-white text-black mb-3"
                 {...register("nombre_cliente", {
                   required: {
                     value: true,
@@ -206,12 +209,12 @@ export function AddFacturas({ selectedDriver }: AddFacturasProps) {
                   txtColor="text-red-500"
                 />
               )}
-              <Label>Destino</Label>
+              <Label className="font-extralight text-white">Destino</Label>
               <Input
                 type="text"
                 readOnly
                 value={selectedClient?.destino || ""}
-                className="rounded-lg text-center p-1"
+                className="rounded-lg text-center p-1 my-3 bg-white text-black"
                 {...register("destino", {
                   required: { value: true, message: "Destino requerido" },
                 })}
@@ -222,11 +225,11 @@ export function AddFacturas({ selectedDriver }: AddFacturasProps) {
                   txtColor="text-red-500"
                 />
               )}
-              <Label>Bultos</Label>
+              <Label className="font-extralight text-white">Bultos</Label>
               <Input
                 type="number"
                 placeholder="10"
-                className="mb-4 rounded-lg p-1 text-center"
+                className="mb-4 rounded-lg p-1 text-center mt-3 bg-white text-black"
                 {...register("bultos", {
                   required: {
                     value: true,
@@ -248,8 +251,7 @@ export function AddFacturas({ selectedDriver }: AddFacturasProps) {
               {facturasData.length > 0 && (
                 <Button
                   type="button"
-                  className="w-full mt-2 p-3 rounded-lg bg-green-500 text-white
-                  hover:bg-green-700"
+                  className="w-full mt-2 p-3 rounded-lg bg-green-500 text-white hover:bg-green-700"
                   onClick={handleSubmitFacturas}
                 >
                   Enviar todas las facturas

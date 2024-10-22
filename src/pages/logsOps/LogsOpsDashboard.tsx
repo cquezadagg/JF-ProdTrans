@@ -1,6 +1,7 @@
 import { LogsOpsNav } from "@ui/navs/LogsOpsNav";
 import { useAppContext } from "@/hooks/useAppContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { format } from "date-fns";
 import {
   Table,
   TableBody,
@@ -17,25 +18,30 @@ import {
   CardContent,
 } from "@/components/ui/Card";
 import { LineMdLoadingTwotoneLoop } from "@/components/ui/Loading";
+import FilterManifest from "@/components/ui/filters/FilterManifest";
 
 type FacturasStatus = "Asignado" | "En camino" | "Entregado";
 
-// const facturaStatuses: FacturasStatus[] = [
-//   "Asignado",
-//   "En camino",
-//   "Entregado",
-// ];
+interface Filters {
+  status: string | null;
+  date: string | null;
+  search: string | null;
+}
 
 export function LogsOpsDashboard() {
   const { manifestsData, driversData } = useAppContext();
-  const [isLoading, setIsLoading] = useState(true); // Estado para manejar la carga
+  const [isLoading, setIsLoading] = useState(true);
+  const [filters, setFilters] = useState<Filters>({
+    status: null,
+    date: null,
+    search: null,
+  });
 
-  // Simulación de la carga de datos
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true); // Mostrar loading al comenzar
-      await new Promise((resolve) => setTimeout(resolve, 5000)); // Simula un tiempo de carga
-      setIsLoading(false); // Ocultar loading cuando se termine la carga
+      setIsLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      setIsLoading(false);
     };
 
     fetchData();
@@ -45,6 +51,48 @@ export function LogsOpsDashboard() {
     Asignado: "bg-blue-200 text-blue-800",
     "En camino": "bg-yellow-200 text-yellow-800",
     Entregado: "bg-green-200 text-green-800",
+  };
+
+  const filteredManifests = useMemo(() => {
+    return manifestsData.filter((manifest) => {
+      if (filters.date) {
+        const manifestDate = format(
+          new Date(manifest.fechaCreacion.toDate()),
+          "yyyy-MM-dd",
+        );
+        if (manifestDate !== filters.date) {
+          return false;
+        }
+      }
+
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const hasMatchingManifest = manifest.numManifiesto
+          .toLowerCase()
+          .includes(searchLower);
+        const hasMatchingFactura = manifest.facturas.some((factura) =>
+          factura.numFactura.toString().includes(searchLower),
+        );
+        if (!hasMatchingManifest && !hasMatchingFactura) {
+          return false;
+        }
+      }
+
+      if (filters.status) {
+        const hasMatchingStatus = manifest.facturas.some(
+          (factura) => factura.estado === filters.status,
+        );
+        if (!hasMatchingStatus) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [manifestsData, filters]);
+
+  const handleFilterChange = (newFilters: Filters) => {
+    setFilters(newFilters);
   };
 
   if (isLoading) {
@@ -58,112 +106,87 @@ export function LogsOpsDashboard() {
       <header>
         <LogsOpsNav />
       </header>
-      <main className="min-h-screen">
-        <h1 className="text-white font-bold text-2xl mt-10 text-center">
-          Dashboard Logístico
-        </h1>
-        <section className="mt-10 grid rounded-lg p-4 bg-white ">
+      <main>
+        <section>
+          <h1 className="text-white font-bold text-2xl mt-10 text-center mb-4">
+            Dashboard Logístico
+          </h1>
           <Card>
             <CardHeader>
-              <CardTitle className="text-center">Facturas</CardTitle>
+              <CardTitle className="text-center text-2xl">Facturas</CardTitle>
               <CardDescription className="text-center">
                 Listado completo de facturas
               </CardDescription>
             </CardHeader>
+            <FilterManifest onFilterChange={handleFilterChange} />
             <CardContent className="overflow-x-auto border-2">
-              {/* Vista para móviles */}
-              <div className="block sm:hidden">
-                {manifestsData.flatMap((manifest) =>
-                  manifest.facturas.map((factura) => (
-                    <div
-                      key={factura.numFactura}
-                      className="mb-4 p-4 border-2 rounded-lg "
-                    >
-                      <div className="mb-2 grid border-b-2">
-                        <strong>Num. de factura</strong> {factura.numFactura}
-                      </div>
-                      <div className="mb-2 grid border-b-2">
-                        <strong>Destino</strong> {factura.destino}
-                      </div>
-                      <div className="mb-2 grid border-b-2">
-                        <strong>Conductor</strong>{" "}
+              {filteredManifests.flatMap((manifest) =>
+                manifest.facturas.map((factura) => (
+                  <Card
+                    key={factura.numFactura}
+                    className="mb-3 border-2 border-zinc-800"
+                  >
+                    <CardTitle className="p-5 text-center text-xl">
+                      {manifest.numManifiesto}
+                    </CardTitle>
+                    <div className="font-bold text-sm grid grid-cols-2 gap-2 justify-items-stretch pl-6">
+                      <span className="font-extralight text-sm mt-2 text-zinc-700 gap-2 flex flex-col">
+                        <span className="font-bold">Fecha de asignación</span>
+                        {format(
+                          new Date(manifest.fechaCreacion.toDate()),
+                          "dd/MM/yyyy",
+                        )}
+                      </span>
+                      <span className="font-extralight text-sm mt-2 text-zinc-700 gap-2 flex flex-col">
+                        <span className="font-bold">Conductor</span>
                         {
                           driversData.find(
                             (driver) => driver.uid === manifest.idDriver,
                           )?.nombre
                         }
-                      </div>
-                      <div className="grid">
-                        <strong>Estado</strong>{" "}
-                        <span
-                          className={`p-2 rounded ${
-                            statusColor[factura.estado as FacturasStatus] ||
-                            "bg-gray-200 text-gray-800"
-                          }`}
-                        >
-                          {factura.estado}
-                        </span>
-                      </div>
+                      </span>
                     </div>
-                  )),
-                )}
-                {manifestsData.flatMap((manifest) => manifest.facturas)
-                  .length === 0 && (
-                  <div className="mb-4 p-4 border rounded-lg text-center">
-                    No hay facturas disponibles
-                  </div>
-                )}
-              </div>
-              {/* Vista para escritorio */}
-              <div className="hidden sm:block">
-                <Table className="min-w-auto">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Número de manifiesto</TableHead>
-                      <TableHead>Número de factura</TableHead>
-                      <TableHead>Destino</TableHead>
-                      <TableHead>Conductor</TableHead>
-                      <TableHead>Estado</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {manifestsData.flatMap((manifest) =>
-                      manifest.facturas.map((factura) => (
-                        <TableRow key={factura.numFactura} className="w-full">
-                          <TableCell>{manifest.numManifiesto}</TableCell>
-                          <TableCell>{factura.numFactura}</TableCell>
-                          <TableCell>{factura.destino}</TableCell>
-                          <TableCell>
-                            {
-                              driversData.find(
-                                (driver) => driver.uid === manifest.idDriver,
-                              )?.nombre
-                            }
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`p-2 rounded ${
-                                statusColor[factura.estado as FacturasStatus] ||
-                                "bg-gray-200 text-gray-800"
-                              }`}
-                            >
-                              {factura.estado}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      )),
-                    )}
-                    {manifestsData.flatMap((manifest) => manifest.facturas)
-                      .length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center">
-                          No hay facturas disponibles
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                    <CardContent>
+                      <div className="font-extralight text-sm mt-2 text-zinc-700">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Factura</TableHead>
+                              <TableHead>Destino</TableHead>
+                              <TableHead>Bultos</TableHead>
+                              <TableHead>Estado</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell>{factura.numFactura}</TableCell>
+                              <TableCell>{factura.destino}</TableCell>
+                              <TableCell>{factura.cantBultos}</TableCell>
+                              <TableCell>
+                                <span
+                                  className={`p-2 rounded ${
+                                    statusColor[
+                                      factura.estado as FacturasStatus
+                                    ] || "bg-gray-200 text-gray-800"
+                                  }`}
+                                >
+                                  {factura.estado}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )),
+              )}
+              {filteredManifests.flatMap((manifest) => manifest.facturas)
+                .length === 0 && (
+                <div className="text-center p-4">
+                  No hay facturas disponibles
+                </div>
+              )}
             </CardContent>
           </Card>
         </section>

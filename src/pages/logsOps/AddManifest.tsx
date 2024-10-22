@@ -7,7 +7,7 @@ import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { AddFacturas } from "./AddFacturas";
 import { Alert } from "@/components/ui/Alert";
-import { Label } from "@radix-ui/react-select";
+import { Label } from "@/components/ui/label";
 
 export function AddManifest() {
   const [selectedDriver, setSelectedDriver] = useState<Drivers | null>(null);
@@ -38,6 +38,10 @@ export function AddManifest() {
     const data = getValues();
     console.log(data);
   };
+  const resetForm = () => {
+    setSelectedDriver(null);
+    methods.reset();
+  };
   return (
     <>
       <header>
@@ -61,12 +65,12 @@ export function AddManifest() {
                       txtColor="text-red-500"
                     />
                   )}
-                  <label
+                  <Label
                     className="font-extralight text-white"
                     htmlFor="nombreConductor"
                   >
                     Nombre conductor
-                  </label>
+                  </Label>
                   <select
                     className="w-full rounded-lg border border-zinc-300 p-2 font-extralight"
                     {...register("nombreConductor", {
@@ -91,8 +95,9 @@ export function AddManifest() {
                   </select>
                 </article>
                 <article className="grid gap-2">
-                  <Label>Fecha</Label>
+                  <Label className="font-extralight text-white">Fecha</Label>
                   <Input
+                    className="w-full rounded-lg border border-zinc-300 p-2 font-extralight text-black bg-white "
                     value={new Date().toLocaleDateString("es-ES")}
                     readOnly
                     {...register("fechaCreacion")}
@@ -107,7 +112,10 @@ export function AddManifest() {
                 </Button>
               </>
             ) : (
-              <AddFacturas selectedDriver={selectedDriver} />
+              <AddFacturas
+                selectedDriver={selectedDriver}
+                onReset={resetForm}
+              />
             )}
           </form>
         </FormProvider>

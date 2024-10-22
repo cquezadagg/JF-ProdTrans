@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -47,16 +48,18 @@ export default function EnhancedFilter({
       <h3 className="text-lg font-semibold">Filtros</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="status">Estado del conductor</Label>
+          <Label htmlFor="status">Estado de la factura</Label>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger id="status">
               <SelectValue placeholder="Seleccionar estado" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="Asignado">Asignado</SelectItem>
-              <SelectItem value="En camino">En camino</SelectItem>
-              <SelectItem value="Entregado">Entregado</SelectItem>
+              <SelectGroup>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="Asignado">Asignado</SelectItem>
+                <SelectItem value="En camino">En camino</SelectItem>
+                <SelectItem value="Entregado">Entregado</SelectItem>
+              </SelectGroup>
             </SelectContent>
           </Select>
         </div>
