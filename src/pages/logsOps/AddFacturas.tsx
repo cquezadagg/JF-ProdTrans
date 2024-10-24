@@ -1,15 +1,20 @@
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { useAppContext } from "@/hooks/useAppContext";
 import { Drivers, Manifest } from "@/types/types";
-import { useEffect, useState } from "react";
-import { FieldValues, useFormContext } from "react-hook-form";
-import { TableFacturas } from "./TableFacturas";
-import { Alert } from "@/components/ui/Alert";
+import { useState } from "react";
+import { FieldValues } from "react-hook-form";
+import TableFacturas from "./TableFacturas2";
 import { LineMdLoadingTwotoneLoop } from "@/components/ui/Loading";
 import { addManifestData } from "@/services/AddManifests";
 import { PopupState } from "@/components/ui/ErrorMessage";
-import { Label } from "@/components/ui/label";
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+} from "firebase/storage";
+import { collection, getDocs } from "firebase/firestore";
+import { firestore } from "@/firebase/client";
 
 interface AddFacturasProps {
   selectedDriver: Drivers | null;
@@ -21,59 +26,171 @@ export function AddFacturas({ selectedDriver, onReset }: AddFacturasProps) {
   const [facturasData, setFacturasData] = useState<FieldValues[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [destino, setDestino] = useState("");
   const [isGood, setIsGood] = useState(false);
   const [bgColor, txtColor] = isGood
     ? ["bg-green-200", "text-green-800"]
     : ["bg-red-200", "text-red-800"];
-  const {
-    register,
-    watch,
-    formState: { errors },
-    trigger,
-    getValues,
-    reset,
-  } = useFormContext();
+  const [selectedOption, setSelectedOption] = useState("manual");
+  const [image, setImage] = useState<File | null>(null);
 
-  // Observar el valor seleccionado en el select del cliente
-  const selectedClientName = watch("nombre_cliente");
-  useEffect(() => {
-    const selectedClient = clientData.find(
-      (client) => client.nombre === selectedClientName,
-    );
-    if (selectedClient) {
-      setDestino(selectedClient.destino || "");
-    }
-  }, [selectedClientName, clientData]);
+  // Función modificada para procesar el texto OCR y extraer campos específicos
+  const processOCRData = (text: string) => {
+    try {
+      console.log("Texto recibido:", text);
+      const lines = text.split("\n").map((line) => line.trim());
+      const facturas: FieldValues[] = [];
 
-  const handleAddFacturas = async () => {
-    const isValid = await trigger([
-      "numero_factura",
-      "nombre_cliente",
-      "bultos",
-    ]);
-    if (isValid) {
-      const data = getValues();
-      if (data.numero_factura) {
+      // Variables para almacenar datos temporales
+      let currentFactura: FieldValues | null = null;
+
+      for (const line of lines) {
+        // Buscar número de pedido (PV seguido de números)
+        const pvMatch = line.match(/PV\d+/);
+
+        if (pvMatch) {
+          // Si ya hay una factura en proceso, guardarla
+          if (currentFactura) {
+            facturas.push(currentFactura);
+          }
+
+          // Extraer otros datos de la línea
+          const rowData = line.split(/\s+/);
+          const tipoOrden =
+            rowData.find((item) =>
+              ["Tiendas Propias", "Grandes Tiendas", "Especialistas"].includes(
+                item,
+              ),
+            ) || "";
+
+          currentFactura = {
+            numero_factura: pvMatch[0],
+            tipo_orden: tipoOrden,
+            cliente: "",
+            avisar_a: "",
+            ciudad: "",
+            direccion: "",
+            bultos: "",
+            unidades: "",
+          };
+
+          // Procesar el resto de la línea
+          const lineText = line.substring(pvMatch[0].length).trim();
+
+          // Buscar cliente y destino
+          if (lineText.includes("COMERCIAL ETCETERA S.A.")) {
+            currentFactura.cliente = "COMERCIAL ETCETERA S.A.";
+          } else if (lineText.includes("CENCOSUD")) {
+            currentFactura.cliente = "CENCOSUD RETAIL S.A.";
+          }
+
+          // Extraer ciudad (Santiago o Rancagua)
+          if (lineText.includes("SANTIAGO")) {
+            currentFactura.ciudad = "SANTIAGO";
+          } else if (lineText.includes("RANCAGUA")) {
+            currentFactura.ciudad = "RANCAGUA";
+          }
+
+          // Extraer números para bultos y unidades
+          const numbers = lineText.match(/\b\d+\b/g);
+          if (numbers && numbers.length >= 2) {
+            currentFactura.bultos = numbers[numbers.length - 2];
+            currentFactura.unidades = numbers[numbers.length - 1];
+          }
+
+          // Extraer dirección
+          const direccionMatch = lineText.match(
+            /(?:AV\.|AVENIDA|PRADO)\s+[^,]+/,
+          );
+          if (direccionMatch) {
+            currentFactura.direccion = direccionMatch[0];
+          }
+
+          // Extraer "avisar a" (códigos tipo T seguidos de números o nombres de plaza)
+          const avisarMatch = lineText.match(/T\d+|PLAZA\s+[^,]+/);
+          if (avisarMatch) {
+            currentFactura.avisar_a = avisarMatch[0];
+          }
+        }
       }
-      const facturaData = { ...data, destino };
-      setFacturasData([...facturasData, facturaData]);
-      reset();
+
+      // No olvidar agregar la última factura
+      if (currentFactura) {
+        facturas.push(currentFactura);
+      }
+
+      if (facturas.length > 0) {
+        setFacturasData(facturas);
+        setError("");
+      } else {
+        setError("No se pudieron extraer datos de facturas del texto.");
+      }
+    } catch (error) {
+      console.error("Error al procesar el texto OCR:", error);
+      setError("Error al procesar el texto extraído.");
     }
   };
 
-  const selectedClient = clientData.find(
-    (client) => client.nombre === selectedClientName,
-  );
+  // Manejador de subida de imagen
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImage(file);
+      setLoading(true);
 
-  useEffect(() => {
-    if (error) {
-      setTimeout(() => {
-        setError("");
-      }, 3000);
+      const storage = getStorage();
+      const storageRef = ref(storage, `images/${file.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log("Upload is " + progress + "% done");
+        },
+        (error) => {
+          setError("Error al subir la imagen.");
+          setLoading(false);
+        },
+        () => {
+          getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+            await processImageWithVision(downloadURL);
+          });
+        },
+      );
     }
-  }, [error]);
+  };
 
+  // Procesar imagen con Vision
+  const processImageWithVision = async (imageUrl: string) => {
+    try {
+      setLoading(true);
+      const extractedTextCollection = collection(firestore, "extractedText");
+      const querySnapshot = await getDocs(extractedTextCollection);
+
+      const docs = querySnapshot.docs;
+      if (docs.length > 0) {
+        const lastDoc = docs[docs.length - 1];
+        const data = lastDoc.data();
+
+        if (data && data.text) {
+          processOCRData(data.text);
+        } else {
+          setError("El documento no contiene texto.");
+        }
+      } else {
+        setError("No se encontraron documentos en la colección.");
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error("Error al procesar la imagen:", err);
+      setError("Error al obtener los datos procesados.");
+      setLoading(false);
+    }
+  };
+
+  // Manejar el envío de facturas
   const handleSubmitFacturas = async () => {
     setLoading(true);
     if (facturasData.length > 0) {
@@ -81,26 +198,21 @@ export function AddFacturas({ selectedDriver, onReset }: AddFacturasProps) {
         const manifestData: Manifest["facturas"] = facturasData.map(
           (factura) => ({
             numFactura: factura.numero_factura,
-            destino: factura.destino,
             nombreCliente: factura.nombre_cliente,
+            destino: factura.avisar_a,
             cantBultos: factura.bultos,
             estado: "Asignado",
           }),
         );
 
         try {
-          const responsePrueba = await addManifestData(
-            manifestData,
-            selectedDriver,
-          );
-
+          const response = await addManifestData(manifestData, selectedDriver);
           setLoading(false);
 
-          if (responsePrueba.success) {
+          if (response.success) {
             setIsGood(true);
-            setError(responsePrueba.message.toString());
+            setError(response.message.toString());
 
-            // Esperar 3 segundos antes de ejecutar el reset
             setTimeout(() => {
               setError("");
               onReset();
@@ -109,7 +221,7 @@ export function AddFacturas({ selectedDriver, onReset }: AddFacturasProps) {
             }, 3000);
           } else {
             setIsGood(false);
-            setError(responsePrueba.message.toString());
+            setError(response.message.toString());
           }
         } catch (err) {
           setLoading(false);
@@ -125,151 +237,61 @@ export function AddFacturas({ selectedDriver, onReset }: AddFacturasProps) {
   };
 
   return (
-    <>
-      <article
-        className={`w-full grid justify-items-center gap-4 p-4 rounded-lg bg-gray-700  ${facturasData.length > 0 ? "md:grid-cols-2" : ""}`}
-      >
-        <div className="w-full max-w-2xl">
-          <section className="grid justify-items-center place-items-center">
-            <h2 className="text-2xl font-bold mb-3 text-white">
-              Datos conductor
-            </h2>
-            <section className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="font-extralight text-gray-300">Nombre</p>
-                <p className="w-full rounded-lg border border-zinc-300 p-3 font-extralight text-center bg-gray-800 text-white">
-                  {selectedDriver?.nombre}
-                </p>
-              </div>
-              <div>
-                <p className="font-extralight text-gray-300">Patente</p>
-                <p className="w-full rounded-lg border border-zinc-300 p-3 font-extralight text-center bg-gray-800 text-white">
-                  {selectedDriver?.patente}
-                </p>
-              </div>
-            </section>
-          </section>
-          <section className="mt-4">
-            <h2 className="text-xl font-bold mb-2 text-white">
-              Ingresar facturas
-            </h2>
-            <div>
-              {errors.numero_factura && (
-                <Alert
-                  message={errors.numero_factura.message?.toString()}
-                  txtColor="text-red-500"
+    <div className="space-y-4">
+      <section className="bg-gray-800 p-6 rounded-lg">
+        <h2 className="text-white text-xl font-bold mb-4">Ingresar Facturas</h2>
+
+        <div className="mb-4">
+          <select
+            value={selectedOption}
+            onChange={(e) => setSelectedOption(e.target.value)}
+            className="w-full rounded-lg p-2 bg-white"
+          >
+            <option value="manual">Ingreso Manual</option>
+            <option value="imagen">Subir Imagen</option>
+          </select>
+        </div>
+
+        {selectedOption === "imagen" && (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <label className="text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg cursor-pointer">
+                Seleccionar Imagen
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
                 />
-              )}
-              <Label className="font-extralight text-white">
-                Numero factura
-              </Label>
-              <Input
-                type="text"
-                placeholder="1234-5"
-                className="mb-4 rounded-lg p-1 text-center bg-white text-black"
-                {...register("numero_factura", {
-                  required: {
-                    value: true,
-                    message: "Número de factura requerido",
-                  },
-                  validate: (value) => {
-                    const exists = facturasData.some(
-                      (factura) => factura.numero_factura === value,
-                    );
-                    return !exists || "Este número de factura ya existe";
-                  },
-                })}
-              />
-              {errors.nombre_cliente && (
-                <Alert
-                  message={errors.nombre_cliente.message?.toString()}
-                  txtColor="text-red-500"
-                />
-              )}
-              <Label className="font-extralight text-white">Cliente</Label>
-              <select
-                className="w-full mt-2 rounded-lg border border-zinc-300 p-2 font-extralight bg-white text-black mb-3"
-                {...register("nombre_cliente", {
-                  required: {
-                    value: true,
-                    message: "Debe seleccionar un cliente",
-                  },
-                })}
-              >
-                <option value="">Seleccione un cliente</option>
-                {clientData.map((client, index) => (
-                  <option key={index} value={client.nombre}>
-                    {client.nombre}
-                  </option>
-                ))}
-              </select>
-              {errors.destino && (
-                <Alert
-                  message={errors.destino.message?.toString()}
-                  txtColor="text-red-500"
-                />
-              )}
-              <Label className="font-extralight text-white">Destino</Label>
-              <Input
-                type="text"
-                readOnly
-                value={selectedClient?.destino || ""}
-                className="rounded-lg text-center p-1 my-3 bg-white text-black"
-                {...register("destino", {
-                  required: { value: true, message: "Destino requerido" },
-                })}
-              />
-              {errors.bultos && (
-                <Alert
-                  message={errors.bultos.message?.toString()}
-                  txtColor="text-red-500"
-                />
-              )}
-              <Label className="font-extralight text-white">Bultos</Label>
-              <Input
-                type="number"
-                placeholder="10"
-                className="mb-4 rounded-lg p-1 text-center mt-3 bg-white text-black"
-                {...register("bultos", {
-                  required: {
-                    value: true,
-                    message: "Debe ingresar el número de bultos",
-                  },
-                  min: {
-                    value: 0,
-                    message: "El número de bultos debe ser mayor a 0",
-                  },
-                })}
-              />
-              <Button
-                type="button"
-                className={`w-full p-3 rounded-lg bg-sky-500 text-white hover:bg-sky-700 disabled:bg-gray-400 disabled:text-white ${facturasData.length > 0 ? "bg-sky-950" : ""}`}
-                onClick={handleAddFacturas}
-              >
-                Agregar factura
-              </Button>
-              {facturasData.length > 0 && (
-                <Button
-                  type="button"
-                  className="w-full mt-2 p-3 rounded-lg bg-green-500 text-white hover:bg-green-700"
-                  onClick={handleSubmitFacturas}
-                >
-                  Enviar todas las facturas
-                </Button>
+              </label>
+              {image && (
+                <span className="text-white">
+                  Imagen seleccionada: {image.name}
+                </span>
               )}
             </div>
-          </section>
-        </div>
-        {loading && (
-          <LineMdLoadingTwotoneLoop msg="Verificando datos ingresados..." />
+          </div>
         )}
+
+        {loading && <LineMdLoadingTwotoneLoop msg="Procesando..." />}
+
         {facturasData.length > 0 && (
-          <article>
+          <div className="space-y-4">
             <TableFacturas
               facturasNuevas={facturasData}
               setFacturasNuevas={setFacturasData}
             />
-          </article>
+
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSubmitFacturas}
+                disabled={loading}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+              >
+                Guardar Facturas
+              </Button>
+            </div>
+          </div>
         )}
 
         {error && (
@@ -280,7 +302,7 @@ export function AddFacturas({ selectedDriver, onReset }: AddFacturasProps) {
             bgColor={bgColor}
           />
         )}
-      </article>
-    </>
+      </section>
+    </div>
   );
 }
