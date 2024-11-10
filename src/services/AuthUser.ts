@@ -1,6 +1,6 @@
-import { auth } from '@/firebase/client';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { FieldValues } from 'react-hook-form';
+import { auth } from "@/firebase/client";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { FieldValues } from "react-hook-form";
 
 export async function AuthUser(data: FieldValues) {
   try {
@@ -11,25 +11,25 @@ export async function AuthUser(data: FieldValues) {
         const idToken = await user.getIdTokenResult();
         const claims = idToken.claims;
         if (claims.driver) {
-          return 'driver';
+          return "driver";
         } else if (claims.admin) {
-          return 'admin';
+          return "admin";
         } else if (claims.logsOps) {
-          return 'logsOps';
+          return "logsOps";
         } else if (claims.client) {
-          return 'client';
+          return "client";
         } else {
-          return 'no-role';
+          return "no-role";
         }
       } catch (error) {
-        console.error('Error obteniendo el token:', error);
-        throw new Error('No se pudieron obtener los roles del usuario.');
+        console.error("Error obteniendo el token:", error);
+        throw new Error("No se pudieron obtener los roles del usuario.");
       }
     }
   } catch (error) {
-    console.error('Error iniciando sesión:', error);
+    console.error("Error iniciando sesión:", error);
     throw new Error(
-      'Credenciales inválidas. Verifique su correo y contraseña.'
+      "Credenciales inválidas. Verifique su correo y contraseña.",
     );
   }
 }

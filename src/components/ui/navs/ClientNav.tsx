@@ -62,9 +62,9 @@ export function ClientNav() {
             <li>
               <a
                 href="#"
-                className="block py-2 px-3 text-white hover:bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-500"
+                className="block py-2 px-3 text-white rounded hover:bg-blue-700 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
                 aria-current="page"
-                onClick={() => handleNavigation("/inicio-administrativo")}
+                onClick={() => handleNavigation("/client-dashboard")}
               >
                 Home
               </a>

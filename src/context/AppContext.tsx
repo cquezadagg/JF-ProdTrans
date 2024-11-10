@@ -19,6 +19,8 @@ interface AppContextProps {
     manifestNum: string,
     facturaNum: number,
     newEstado: string,
+    receptor?: string,
+    imagenEntrega?: string | undefined,
   ) => void;
   setClientData: React.Dispatch<React.SetStateAction<Clients[]>>;
   setDriversData: React.Dispatch<React.SetStateAction<Drivers[]>>;
@@ -50,13 +52,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         prevData.map((manifest) =>
           manifest.numManifiesto === manifestNum
             ? {
-                ...manifest,
-                facturas: manifest.facturas.map((factura) =>
-                  factura.numFactura === facturaNum
-                    ? { ...factura, estado: newEstado }
-                    : factura,
-                ),
-              }
+              ...manifest,
+              facturas: manifest.facturas.map((factura) =>
+                factura.numFactura === facturaNum
+                  ? { ...factura, estado: newEstado }
+                  : factura,
+              ),
+            }
             : manifest,
         ),
       );

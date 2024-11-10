@@ -7,7 +7,8 @@ import "./index.css";
 import { LogsOpsDashboard } from "./pages/logsOps/LogsOpsDashboard";
 import { AddManifest } from "./pages/logsOps/AddManifest";
 import { VisualizarFacturas } from "./pages/logsOps/VisualizarFacturas";
-import { ClientDashboard } from "./pages/client/ClientDashboard";
+import { ClientDashboard } from "./pages/client/ClientDashboard2";
+import AddUsers from "./pages/logsOps/AddUsers";
 
 function App() {
   return (
@@ -58,6 +59,12 @@ function App() {
                 requiredRole="client"
                 element={<ClientDashboard />}
               />
+            }
+          />
+          <Route
+            path="/agregar-usuarios"
+            element={
+              <ProtectedRoute requiredRole="logsOps" element={<AddUsers />} />
             }
           />
         </Routes>

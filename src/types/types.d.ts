@@ -7,11 +7,13 @@ export interface Manifest {
   facturas: Facturas[];
 }
 export interface Facturas {
+  receptor: string;
   numFactura: number;
   nombreCliente: string;
   destino: string;
   cantBultos: number;
   estado: string;
+  imagenEntrega: string;
 }
 
 export interface Drivers {

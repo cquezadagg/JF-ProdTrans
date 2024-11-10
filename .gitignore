@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 .env
 .firebaserc
+firebase-admin-sdk.json
+

@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAppContext } from '@/hooks/useAppContext';
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppContext } from "@/hooks/useAppContext";
 
 interface ProtectedRouteProps {
   requiredRole: string;
