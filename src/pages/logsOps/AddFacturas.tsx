@@ -85,6 +85,8 @@ export function AddFacturas({ selectedDriver, onReset }: AddFacturasProps) {
             nombreCliente: factura.nombre_cliente,
             cantBultos: factura.bultos,
             estado: "Asignado",
+            imagenEntrega: "",
+            receptor: "",
           }),
         );
 

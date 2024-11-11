@@ -19,8 +19,6 @@ import {
 } from "@/components/ui/Card";
 import { LineMdLoadingTwotoneLoop } from "@/components/ui/Loading";
 import FilterManifest from "@/components/ui/filters/FilterManifest";
-import { getFunctions, httpsCallable } from "firebase/functions"; // Asegúrate de tener estas importaciones correctas
-import { functions } from "@/firebase/client";
 
 type FacturasStatus = "Asignado" | "En camino" | "Entregado";
 
@@ -39,17 +37,6 @@ export function LogsOpsDashboard() {
     search: null,
   });
 
-
-  // const assignRoleFunction = httpsCallable(functions, "assignUserRole");
-  //
-  // // Asignar rol 'logsOps' y 'client' al usuario
-  // assignRoleFunction({ uid: "Oujy8pOWV6Rznf28KUcPWT5ogq32", driver: true })
-  //   .then((result) => {
-  //     console.log("Roles asignados:", result.data);
-  //   })
-  //   .catch((error) => {
-  //     console.error("Error al asignar roles:", error);
-  //   });
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -177,10 +164,11 @@ export function LogsOpsDashboard() {
                               <TableCell>{factura.cantBultos}</TableCell>
                               <TableCell>
                                 <span
-                                  className={`p-2 rounded ${statusColor[
-                                    factura.estado as FacturasStatus
-                                  ] || "bg-gray-200 text-gray-800"
-                                    }`}
+                                  className={`p-2 rounded ${
+                                    statusColor[
+                                      factura.estado as FacturasStatus
+                                    ] || "bg-gray-200 text-gray-800"
+                                  }`}
                                 >
                                   {factura.estado}
                                 </span>
@@ -195,16 +183,15 @@ export function LogsOpsDashboard() {
               )}
               {filteredManifests.flatMap((manifest) => manifest.facturas)
                 .length === 0 && (
-                  <div className="text-center p-4">
-                    No hay facturas disponibles
-                  </div>
-                )}
+                <div className="text-center p-4">
+                  No hay facturas disponibles
+                </div>
+              )}
             </CardContent>
           </Card>
         </section>
       </main>
-      <script>
-      </script>
+      <script></script>
     </>
   );
 }

@@ -2,12 +2,7 @@ import { AddUsuarios } from "@/services/AddUsers";
 import { FormProvider, useForm } from "react-hook-form";
 export default function AddUsers() {
   const methods = useForm();
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    getValues,
-  } = methods;
+  const { register, handleSubmit, getValues } = methods;
 
   const onSubmit = async () => {
     const data = getValues();

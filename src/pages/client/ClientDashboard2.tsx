@@ -36,7 +36,6 @@ import {
   MapPin,
   X,
   Filter,
-  ChevronDown,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
