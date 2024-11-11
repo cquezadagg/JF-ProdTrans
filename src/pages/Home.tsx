@@ -126,9 +126,9 @@ export function Home() {
           <div className="mt-8 relative">
             <div className=" md:w-[30rem] md:h-[30rem] bg-[#5aceff] rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-20 -z-1"></div>
             <picture>
-              <img src="/public/tecno.png" alt="Tecnología" className="absolute z-8 " />
+              <img src="tecno.png" alt="Tecnología" className="absolute z-8 " />
               <img
-                src="/public/Partner.png"
+                src="Partner.png"
                 alt="Transport Van"
                 className="relative z-10 "
               />
