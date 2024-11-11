@@ -1,54 +1,52 @@
-import { Button } from "@ui/Button";
-import { Input } from "@ui/Input";
-import { AuthUser } from "@/services/AuthUser";
-import { PopupState } from "@ui/ErrorMessage";
 import { useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
-import { LineMdLoadingTwotoneLoop } from "@/components/ui/Loading";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/Card";
+import { useForm, FormProvider } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { AuthUser } from "@/services/AuthUser";
+import { PopupState } from "@/components/ui/ErrorMessage";
+import { LineMdLoadingTwotoneLoop } from "@/components/ui/Loading";
 
 export function Home() {
   const [loading, setLoading] = useState(false);
   const [isGood, setIsGood] = useState(false);
-  const [bgColor, txtColor] = isGood
-    ? ["bg-green-199", "text-green-800"]
-    : ["bg-red-199", "text-red-800"];
-  const methods = useForm();
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const methods = useForm();
   const {
     register,
     handleSubmit,
     formState: { errors },
     getValues,
   } = methods;
-  const [error, setError] = useState("");
 
   const onSubmit = async () => {
     setLoading(true);
     try {
       const data = getValues();
       const loginUser = await AuthUser(data);
-      if (loginUser === "driver") {
-        setLoading(false);
-        setIsGood(true);
-        navigate("/driver-dashboard");
-      } else if (loginUser === "admin") {
-        setLoading(false);
-        setIsGood(true);
-        navigate("/admin");
-      } else if (loginUser === "logsOps") {
-        setLoading(false);
-        setIsGood(true);
-        navigate("/logOps-dashboard");
-      } else if (loginUser === "client") {
-        setLoading(false);
-        setIsGood(true);
-        navigate("/client-dashboard");
-      } else {
-        setLoading(false);
-        setIsGood(false);
-        setError("Usuario sin rol adecuado, comuníquese con el administrador");
+      setIsGood(true);
+      setLoading(false);
+      switch (loginUser) {
+        case "driver":
+          navigate("/driver-dashboard");
+          break;
+        case "admin":
+          navigate("/admin");
+          break;
+        case "logsOps":
+          navigate("/logOps-dashboard");
+          break;
+        case "client":
+          navigate("/client-dashboard");
+          break;
+        default:
+          setIsGood(false);
+          setError(
+            "Usuario sin rol adecuado, comuníquese con el administrador",
+          );
       }
     } catch (err) {
       setLoading(false);
@@ -57,27 +55,30 @@ export function Home() {
     }
   };
 
+  const [bgColor, txtColor] = isGood
+    ? ["bg-green-100", "text-green-800"]
+    : ["bg-red-100", "text-red-800"];
+
   return (
-    <>
-      <header className="text-white text-center mt-2">
-        <h1 className="text-6xl font-bold mb-2">
-          J<span className="text-5xl">&</span>F
-        </h1>
-        <p className="text-4xl font-light mb-6">TRANSPORTES</p>
-      </header>
-      <div className=" flex flex-col md:flex-row items-center justify-center p-4 md:p-8">
-        <div className="w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden">
-          <div className="p-6 md:p-8">
-            <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">
-              Iniciar Sesión
-            </h2>
+    <div className="min-h-screen w-full bg-[#002B5B] flex items-center justify-center p-4">
+      <div className="w-full max-w-6xl flex flex-col-reverse lg:flex-row items-center gap-8 lg:gap-0">
+        <Card className="w-full lg:w-1/2 bg-white shadow-xl">
+          <CardContent className="p-6">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold mb-2">
+                J<span className="text-3xl">&</span>F
+              </h1>
+              <h2 className="text-2xl">TRANSPORTES</h2>
+            </div>
+
             <FormProvider {...methods}>
-              <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-                <div>
-                  <Label>Ingrese su correo</Label>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Ingrese su correo</Label>
                   <Input
-                    placeholder="tu@empresa.cl"
+                    id="email"
                     type="email"
+                    placeholder="tu@empresa.cl"
                     {...register("email", {
                       required: "Correo es requerido",
                       pattern: {
@@ -93,9 +94,10 @@ export function Home() {
                   )}
                 </div>
 
-                <div>
-                  <Label>Ingrese su contraseña</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Ingrese su contraseña</Label>
                   <Input
+                    id="password"
                     type="password"
                     placeholder="••••••••"
                     {...register("password", {
@@ -109,46 +111,43 @@ export function Home() {
                   )}
                 </div>
 
-                <div className="mt-6">
-                  <Button
-                    type="submit"
-                    className="w-full
-                    bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-                  >
-                    Iniciar Sesión
-                  </Button>
-                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  Iniciar Sesión
+                </Button>
               </form>
             </FormProvider>
+          </CardContent>
+        </Card>
+
+        <div className="w-full lg:w-1/2 flex justify-center items-center p-6">
+          <div className="relative w-full max-w-md aspect-square">
+            <div className="absolute inset-0 bg-sky-400/20 rounded-full animate-pulse"></div>
+            <div className="relative bg-sky-400/30 rounded-full p-4 w-full h-full flex items-center justify-center">
+              <div className="bg-sky-400/40 rounded-full p-4 w-5/6 h-5/6 flex items-center justify-center overflow-hidden">
+                <img
+                  src="/Partner.png"
+                  alt="Transport Van"
+                  className="object-cover w-full h-full"
+                />
+              </div>
+            </div>
           </div>
         </div>
-        <div className="text-white text-center md:text-left md:w-1/2 mb-8 md:mb-0">
-          <div className="mt-8 relative">
-            <div className=" md:w-[30rem] md:h-[30rem] bg-[#5aceff] rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-20 -z-1"></div>
-            <picture>
-              <img src="tecno.png" alt="Tecnología" className="absolute z-8 " />
-              <img
-                src="Partner.png"
-                alt="Transport Van"
-                className="relative z-10 "
-              />
-            </picture>
-          </div>
-        </div>
-
-        {error && (
-          <PopupState
-            mensajeAlertSuc={error}
-            isGood={isGood}
-            txtColor={txtColor}
-            bgColor={bgColor}
-          />
-        )}
-
-        {loading && (
-          <LineMdLoadingTwotoneLoop msg="Validando credenciales..." />
-        )}
       </div>
-    </>
+
+      {error && (
+        <PopupState
+          mensajeAlertSuc={error}
+          isGood={isGood}
+          txtColor={txtColor}
+          bgColor={bgColor}
+        />
+      )}
+
+      {loading && <LineMdLoadingTwotoneLoop msg="Validando credenciales..." />}
+    </div>
   );
 }
